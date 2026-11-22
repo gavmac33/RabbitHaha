@@ -1,0 +1,15 @@
+{
+  "name": "rabbithaha",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Rabbit: a personal bunnylol-style command line for Chrome's address bar.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/unit.test.js",
+    "test:e2e": "node --test test/e2e.test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  },
+  "license": "MIT"
+}
