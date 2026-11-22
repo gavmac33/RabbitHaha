@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="popup">
+  <h1>🐇 Add this page</h1>
+  <form id="form">
+    <label class="col">Alias(es)<input id="key" placeholder="e.g. hn" required autofocus></label>
+    <label class="col">Name<input id="name"></label>
+    <label class="col">URL<input id="url" required></label>
+    <label class="col">Search template <span class="hint">(optional, %s = query)</span><input id="search" placeholder="https://…?q=%s"></label>
+    <div class="bar">
+      <button type="submit" class="primary">Save</button>
+      <a href="options.html" target="_blank">All commands</a>
+    </div>
+    <p id="msg" class="hint"></p>
+  </form>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
