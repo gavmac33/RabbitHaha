@@ -1,6 +1,6 @@
 {
   "name": "rabbithaha",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Rabbit: a personal bunnylol-style command line for Chrome's address bar.",
   "type": "module",

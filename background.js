@@ -1,4 +1,4 @@
-import { loadCommands, loadSettings, saveCommands, resolve, parse, keysOf, upsert, toUrls } from "./lib.js";
+import { loadCommands, loadSettings, saveCommands, resolve, parse, keysOf, upsert, toUrls, mergeNewDefaults } from "./lib.js";
 
 let cache = null;
 async function state() {
@@ -107,6 +107,8 @@ chrome.webNavigation.onBeforeNavigate.addListener(async d => {
 }, { url: [{ hostSuffix: "google.com", pathEquals: "/search" }] });
 
 // First install: open the command list so it's obvious what's available.
-chrome.runtime.onInstalled.addListener(({ reason }) => {
+// Install or update: pull in any built-in commands this version added.
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason === "install") chrome.tabs.create({ url: HELP_URL() });
+  if (reason === "install" || reason === "update") await mergeNewDefaults();
 });

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Rabbit",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Your personal command line for the browser: type short commands in the address bar and jump straight to the page.",
   "background": { "service_worker": "background.js", "type": "module" },
   "omnibox": { "keyword": "b" },

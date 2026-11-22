@@ -1,8 +1,22 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  DEFAULT_COMMANDS, DEFAULT_SETTINGS, parse, fill, resolve, keysOf, findCommand, upsert, toUrls
+  DEFAULT_COMMANDS, DEFAULT_SETTINGS, parse, fill, resolve, keysOf, findCommand, upsert, toUrls,
+  newDefaults, mergeNewDefaults, saveCommands, loadCommands
 } from "../lib.js";
+
+// Minimal in-memory chrome.storage.sync for the storage tests.
+function fakeStorage(initial = {}) {
+  const data = { ...initial };
+  const pick = keys => keys == null ? { ...data }
+    : Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter(k => k in data).map(k => [k, data[k]]));
+  globalThis.chrome = { storage: { sync: {
+    get: async keys => pick(keys),
+    set: async obj => { Object.assign(data, obj); },
+    remove: async keys => { for (const k of [].concat(keys)) delete data[k]; }
+  } } };
+  return data;
+}
 
 const C = DEFAULT_COMMANDS;
 const S = DEFAULT_SETTINGS;
@@ -108,4 +122,36 @@ test("tr and news code commands", async () => {
   assert.deepEqual(await runCode(codeFor("tr"), "es good morning"),
     ["https://translate.google.com/?sl=auto&tl=es&text=good%20morning&op=translate"]);
   assert.equal((await runCode(codeFor("news"))).length, 2);
+});
+
+test("newDefaults adds only unknown, non-clashing built-ins", () => {
+  const mine = [{ key: "gm", url: "https://example.com/mymail" }]; // user's own gm
+  const known = DEFAULT_COMMANDS.filter(d => d.key !== "cy,chat,chatgpt" && d.key !== "gm,mail").map(d => d.key);
+  const added = newDefaults(mine, known);
+  assert.deepEqual(added.map(d => d.key), ["cy,chat,chatgpt"]); // gm,mail clashes with the user's gm
+});
+
+test("mergeNewDefaults keeps edits, adds new built-ins, never revives deleted ones", async () => {
+  // A saved list from an older version: no ChatGPT, user deleted Amazon, edited GitHub.
+  fakeStorage();
+  const old = DEFAULT_COMMANDS.filter(d => !["cy,chat,chatgpt", "amz"].includes(d.key))
+    .map(d => d.key === "gh" ? { ...d, url: "https://github.com/me" } : d);
+  await saveCommands(old);
+  const store = fakeStorage({ ...(await chrome.storage.sync.get(null)) });
+  store.knownDefaults = DEFAULT_COMMANDS.filter(d => d.key !== "cy,chat,chatgpt").map(d => d.key);
+
+  const added = await mergeNewDefaults();
+  assert.deepEqual(added.map(d => d.key), ["cy,chat,chatgpt"]);
+  const now = await loadCommands();
+  assert.equal(findCommand(now, "chatgpt").url, "https://chatgpt.com/");
+  assert.equal(findCommand(now, "gh").url, "https://github.com/me");
+  assert.equal(findCommand(now, "amz"), undefined);
+  assert.deepEqual(await mergeNewDefaults(), []); // idempotent
+});
+
+test("mergeNewDefaults does nothing to storage on a fresh install", async () => {
+  const store = fakeStorage();
+  assert.deepEqual(await mergeNewDefaults(), []);
+  assert.equal(store.cmds_n, undefined);
+  assert.ok(store.knownDefaults.includes("cy,chat,chatgpt"));
 });

@@ -147,6 +147,28 @@ export function resolve(commands, settings, input) {
   return { type: "fallback", url: fill(settings.fallback, input.trim()) };
 }
 
+// Built-ins added in a later version should reach people whose command list is already saved,
+// without overwriting their edits or reviving defaults they deleted. `known` holds the default
+// keys a previous version shipped; anything new that doesn't clash with an existing alias is added.
+export function newDefaults(commands, known) {
+  return DEFAULT_COMMANDS.filter(d =>
+    !known.includes(d.key) && !keysOf(d).some(k => findCommand(commands, k))
+  );
+}
+
+export async function mergeNewDefaults() {
+  const { cmds_n, knownDefaults } = await chrome.storage.sync.get(["cmds_n", "knownDefaults"]);
+  const added = [];
+  // Before this existed nothing was recorded, so treat every current default as new.
+  if (cmds_n) {
+    const commands = await loadCommands();
+    added.push(...newDefaults(commands, knownDefaults || []));
+    if (added.length) await saveCommands([...commands, ...added]);
+  }
+  await chrome.storage.sync.set({ knownDefaults: DEFAULT_COMMANDS.map(d => d.key) });
+  return added;
+}
+
 // Normalize what a code command returned into a list of URLs.
 export function toUrls(result) {
   const list = (Array.isArray(result) ? result : [result])
